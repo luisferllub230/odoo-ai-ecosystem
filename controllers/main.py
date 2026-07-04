@@ -34,7 +34,12 @@ class AzulController(http.Controller):
                           plus our own `reference` and `access_token`).
         :return: A redirection to the payment status page.
         """
-        _logger.info("Handling redirection from AZUL with data:\n%s", pprint.pformat(data))
+        _logger.info(
+            "Handling redirection from AZUL with data:\n%s",
+            pprint.pformat({
+                key: '***' if key == 'access_token' else value for key, value in data.items()
+            }),
+        )
 
         # Find the transaction and verify the origin of the return before any
         # state change: our own access token first, then the AZUL response hash.

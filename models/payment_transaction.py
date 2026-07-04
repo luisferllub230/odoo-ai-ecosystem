@@ -153,6 +153,28 @@ class PaymentTransaction(models.Model):
             amount_dop = self.currency_id._convert(
                 self.amount, currency_dop, company, conversion_date
             )
+            # Fail LOUDLY on a suspicious conversion: never send a wrong amount
+            # to AZUL. A conversion that returns a non-positive amount, or an
+            # amount identical to the original while no exchange rate is
+            # configured (both currencies silently defaulting to rate 1.0),
+            # means the DOP rate setup is missing.
+            has_configured_rate = bool(self.env['res.currency.rate'].search_count([
+                ('currency_id', 'in', (currency_dop.id, self.currency_id.id)),
+                ('company_id', 'in', (company.id, False)),
+            ]))
+            suspicious_identity = (
+                not has_configured_rate
+                and currency_dop.compare_amounts(amount_dop, self.amount) == 0
+            )
+            if amount_dop <= 0 or suspicious_identity:
+                raise ValidationError(_(
+                    "AZUL: Cannot convert %(amount)s %(currency)s to DOP: no usable DOP "
+                    "exchange rate is configured for company %(company)s. Configure an "
+                    "exchange rate for DOP before paying through AZUL.",
+                    amount=self.amount,
+                    currency=self.currency_id.name,
+                    company=company.name,
+                ))
             conversion_details = (
                 f"{self.amount:.2f} {self.currency_id.name} converted to "
                 f"{amount_dop:.2f} DOP on {conversion_date} (latest rate of company "
