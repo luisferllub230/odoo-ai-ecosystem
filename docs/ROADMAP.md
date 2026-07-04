@@ -11,19 +11,20 @@
 - ✅ (2026-07-03) Relevar contexto de la máquina (12 cores, 15GB RAM WSL, RTX 5060, Ubuntu 24.04 WSL2, 3 cuentas SSH GitHub).
 - ✅ (2026-07-03) Decisiones de arquitectura: gentle-ai como orquestador, Odoo gestor Enterprise en contenedor dedicado y carpeta nueva (proyecto independiente escalable), repo en cuenta GitHub personal.
 - ✅ (2026-07-03) Crear este repo con README + documentación por fases.
-- ⬜ Activar Docker Desktop WSL integration en esta distro (Settings → Resources → WSL integration → Ubuntu-24.04). **Acción humana.**
-- ⬜ Crear repo en GitHub (cuenta personal) y hacer push inicial (`git remote add origin git@github.com-personal:<user>/odoo-ai-ecosystem.git`).
+- ✅ (2026-07-04) Activar Docker Desktop WSL integration en esta distro (verificado con `docker ps`).
+- ✅ (2026-07-04) Repo en GitHub personal: `git@github.com-personal:luisferllub230/odoo-ai-ecosystem-.git`, push inicial hecho.
 
 ## Fase 1 — Base gentle-ai + Claude Code
 
 Guía: [fases/01-gentle-ai.md](fases/01-gentle-ai.md)
 
-- ⬜ Instalar gentle-ai (`brew` o `go install`) y verificar con `gentle-ai doctor`.
-- ⬜ Ejecutar `/sdd-init` en este repo (detecta stack, activa SDD).
-- ⬜ Configurar Engram (memoria persistente) y validar `engram projects list`.
-- ⬜ `gentle-ai skill-registry refresh` — registrar skills del repo.
-- ⬜ Crear `CLAUDE.md` del repo con reglas del ecosistema (leer ROADMAP, estándares, gates humanos).
-- ⬜ Definir perfil SDD: modelo potente para diseño, rápido para implementación (asignación por fase).
+- ✅ (2026-07-04) Instalar gentle-ai v1.43.3 (binario release → `~/.local/bin`) con componentes engram, gga, sdd, skills, permissions, context7 (sin persona/theme). `gentle-ai doctor`: solo quedan avisos no bloqueantes (opencode no instalado — no se usa; engram HTTP 7437 apagado — el MCP stdio sí funciona; binario `claude` duplicado en PATH).
+- ✅ (2026-07-04) SDD inicializado en modo engram (sin openspec/): contexto y capacidades de testing persistidos (observaciones #2, #3, proyecto `odoo-ai-ecosystem`).
+- ✅ (2026-07-04) Engram v1.17.0 operativo (`~/go/bin`, agregado a PATH en .zshrc) y conectado como MCP en Claude Code; save/search probados.
+- ✅ (2026-07-04) `gentle-ai skill-registry refresh` → `.atl/skill-registry.md` (11 skills).
+- ✅ (2026-07-04) `CLAUDE.md` del repo creado (reglas, gates, engram, plantillas).
+- ✅ (2026-07-04) Modelos por fase ya asignados por gentle-ai en `~/.claude/agents/sdd-*.md`: diseño=opus, implementación/exploración=sonnet.
+- ⬜ Reiniciar Claude Code para que cargue los subagentes sdd-* instalados (hoy los skills se ejecutan inline). **Acción humana.**
 
 ## Fase 2 — Odoo Gestor
 

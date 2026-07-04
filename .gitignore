@@ -3,3 +3,5 @@
 enterprise/
 node_modules/
 __pycache__/
+# Local AI runtime state
+.atl/
