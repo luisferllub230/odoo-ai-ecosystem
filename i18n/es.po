@@ -1,0 +1,154 @@
+# Translation of azul_webpages to Spanish.
+# Part of azul_webpages. See LICENSE file for full copyright and licensing details.
+msgid ""
+msgstr ""
+"Project-Id-Version: azul_webpages 18.0.1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_merchant_id
+msgid "Azul Merchant ID"
+msgstr "ID de comercio Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_merchant_name
+msgid "Azul Merchant Name"
+msgstr "Nombre de comercio Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_merchant_type
+msgid "Azul Merchant Type"
+msgstr "Tipo de comercio Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_currency_code
+msgid "Azul Currency Code"
+msgstr "Código de moneda Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_auth_key
+msgid "Azul Auth Key"
+msgstr "Clave de autenticación Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_provider__azul_use_alternate_url
+msgid "Use Azul Alternate Site"
+msgstr "Usar site alterno de Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_order_id
+msgid "Azul Order ID"
+msgstr "Nº de orden Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_authorization_code
+msgid "Azul Authorization Code"
+msgstr "Código de autorización Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_rrn
+msgid "Azul RRN"
+msgstr "RRN de Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_iso_code
+msgid "Azul ISO Code"
+msgstr "Código ISO de Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_response_message
+msgid "Azul Response Message"
+msgstr "Mensaje de respuesta de Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_date_time
+msgid "Azul Date Time"
+msgstr "Fecha y hora de Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_amount_sent
+msgid "Azul Amount Sent"
+msgstr "Monto enviado a Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_itbis_sent
+msgid "Azul ITBIS Sent"
+msgstr "ITBIS enviado a Azul"
+
+#. module: azul_webpages
+#: model:ir.model.fields,field_description:azul_webpages.field_payment_transaction__azul_conversion_details
+msgid "Azul Currency Conversion"
+msgstr "Conversión de moneda Azul"
+
+#. module: azul_webpages
+#: code:addons/azul_webpages/models/payment_transaction.py:0
+msgid "Received data with missing OrderNumber."
+msgstr "Se recibieron datos sin OrderNumber."
+
+#. module: azul_webpages
+#: code:addons/azul_webpages/models/payment_transaction.py:0
+msgid "No transaction found matching reference %s."
+msgstr "No se encontró ninguna transacción con la referencia %s."
+
+#. module: azul_webpages
+#: code:addons/azul_webpages/models/payment_transaction.py:0
+msgid "The customer canceled the payment on the AZUL Payment Page."
+msgstr "El cliente canceló el pago en la Página de Pagos AZUL."
+
+#. module: azul_webpages
+#: code:addons/azul_webpages/models/payment_transaction.py:0
+msgid ""
+"AZUL: The returned amount (%(returned)s) does not match the amount sent "
+"(%(sent)s)."
+msgstr ""
+"AZUL: El monto devuelto (%(returned)s) no coincide con el monto enviado "
+"(%(sent)s)."
+
+#. module: azul_webpages
+#: code:addons/azul_webpages/models/payment_transaction.py:0
+msgid ""
+"AZUL: Payment declined or failed (IsoCode: %(iso_code)s; ResponseMessage: "
+"%(response_message)s; ErrorDescription: %(error_description)s)."
+msgstr ""
+"AZUL: Pago declinado o fallido (IsoCode: %(iso_code)s; ResponseMessage: "
+"%(response_message)s; ErrorDescription: %(error_description)s)."
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Merchant ID"
+msgstr "ID de comercio"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Merchant Name"
+msgstr "Nombre de comercio"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Merchant Type"
+msgstr "Tipo de comercio"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Currency Code"
+msgstr "Código de moneda"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Auth Key"
+msgstr "Clave de autenticación"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_provider_form
+msgid "Use Alternate Site"
+msgstr "Usar site alterno"
+
+#. module: azul_webpages
+#: model_terms:ir.ui.view,arch_db:azul_webpages.payment_transaction_form
+msgid "Azul"
+msgstr "Azul"
