@@ -11,7 +11,8 @@ browser redirect flow.
 - Only `IsoCode = 00` confirms a payment; duplicated or out-of-order returns
   never re-process a transaction.
 
-See `doc/index.rst` for the full flow, hash algorithm, configuration,
-sandbox credentials and test cards.
+See `doc/index.rst` for the full flow, hash algorithm, configuration, test
+cards and the test credentials loaded by demo data (provided by the project
+owner — not published by AZUL in the PDF; test mode only, never production).
 
 License: LGPL-3. Author: Luis Fernández.

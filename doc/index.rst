@@ -112,8 +112,10 @@ Notes:
 Sandbox test data
 =================
 
-Demo data configures the provider in test mode with the public sandbox
-credentials (**DO NOT use in production**):
+Demo data configures the provider in test mode with the AZUL test environment
+credentials provided by the project owner (task 5). They are **not** published
+by AZUL in the Payment Page PDF (the PDF example uses MerchantId
+``99999999999``). Test mode only — **DO NOT use in production**:
 
 - MerchantId: ``39038540035``
 - AuthKey: ``asdhakjshdkjasdasmndajksdkjaskldga8odya9d8yoasyd98asdyaisdhoaisyd0a8sydoashd8oasydoiahdpiashd09ayusidhaos8dy0a8dya08syd0a8ssdsax``

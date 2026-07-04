@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- AZUL sandbox credentials. DO NOT use in production: these credentials
-         are public test data for the AZUL test environment only. -->
+    <!-- AZUL test environment credentials provided by the project owner
+         (task 5). They are NOT published by AZUL in the Payment Page PDF (the
+         PDF example uses MerchantId 99999999999). Test mode only —
+         DO NOT use in production. -->
     <record id="payment_provider_azul" model="payment.provider">
         <field name="state">test</field>
         <field name="azul_merchant_id">39038540035</field>
