@@ -1,0 +1,5 @@
+# Minimal deps baked into the dev image.
+# debugpy is MANDATORY: entrypoint.sh always launches Odoo under it
+# (audit gotcha 6). Project-specific deps live in the project repo —
+# add them here only after generating the environment.
+debugpy

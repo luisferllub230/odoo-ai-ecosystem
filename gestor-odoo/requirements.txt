@@ -1,0 +1,4 @@
+# Dependencias Python adicionales de la instancia gestora.
+# Mínimas a propósito: los módulos project/hr de Enterprise no requieren extras
+# (las dependencias de dev de odoo_pro_19 —debugpy, pyazul, pandas, etc.— no aplican aquí).
+# Añadir paquetes solo si un módulo instalado los exige.

@@ -7,7 +7,7 @@
 1. Leer tarea vía MCP conector (F3).
 2. Explorar el repo objetivo (subagente barato) y validar **factibilidad**.
 3. Generar `docs/tareas/<task_id>/design.md` según `../estandares/plantilla-diseno.md`: factibilidad, alcance, diseño técnico, riesgos, plan de prueba.
-4. Adjuntar/comentar el diseño en la tarea Odoo. Mover a etapa `Análisis/Diseño`.
+4. Adjuntar/comentar el diseño en la tarea Odoo. (La tarea debe estar ya en `Análisis/Diseño` — moverla desde `Backlog` es acción humana.)
 5. ⛔ **Gate humano**: aprueba → humano mueve a `Aprobado`; rechaza → feedback en la tarea, la IA re-analiza.
 
 ## 5.2 Desarrollo (`/tarea-dev <task_id>`)

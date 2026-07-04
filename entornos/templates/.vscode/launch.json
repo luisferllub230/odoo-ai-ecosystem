@@ -1,0 +1,23 @@
+{
+    // Attach to the debugpy listener inside the Odoo container.
+    // Start the stack with `docker compose up` then F5.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Odoo: Remote Attach (debugpy)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": __DEBUG_PORT__
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/mnt/extra-addons"
+                }
+            ],
+            "justMyCode": true
+        }
+    ]
+}

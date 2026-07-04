@@ -1,0 +1,17 @@
+{
+  "name": "manual-generator",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "description": "Standalone Odoo user-manual generator: seeds data, captures screenshots with Playwright and renders a markdown manual against any reachable Odoo instance.",
+  "bin": {
+    "manual-gen": "./bin/manual-gen.mjs"
+  },
+  "dependencies": {
+    "playwright": "~1.58.0",
+    "yaml": "^2.6.0"
+  }
+}

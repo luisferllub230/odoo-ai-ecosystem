@@ -1,0 +1,13 @@
+# --- entornos (odoo-ai-ecosystem) ---------------------------------------------
+# Local env file with credentials. Never commit.
+.env
+# Generated Odoo config carries DB credentials + admin master password.
+conf/odoo.conf
+# Filestore mount is a Docker volume, but keep these out just in case.
+filestore/
+# Editor / OS noise.
+.vscode/*
+!.vscode/launch.json
+.DS_Store
+__pycache__/
+*.py[cod]

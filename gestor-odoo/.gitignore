@@ -1,0 +1,15 @@
+# Credenciales y configuración local
+.env
+
+# Copia local de las fuentes Enterprise (si se elige la opción alternativa)
+enterprise/
+
+# Restos de filestore / datos locales
+filestore/
+data/
+*.dump
+*.sql.gz
+
+# Python
+__pycache__/
+*.pyc

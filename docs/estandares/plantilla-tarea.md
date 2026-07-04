@@ -1,6 +1,6 @@
 # Plantilla de tarea (Odoo gestor)
 
-Toda tarea creada en el Odoo gestor debe seguir esta estructura en su descripción. La IA rechaza (comenta y devuelve a Backlog) tareas sin los campos obligatorios.
+Toda tarea creada en el Odoo gestor debe seguir esta estructura en su descripción. La IA rechaza tareas sin los campos obligatorios (comenta qué falta y se detiene; devolver a Backlog es acción humana).
 
 ```markdown
 ## Contexto

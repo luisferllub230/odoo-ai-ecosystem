@@ -1,0 +1,42 @@
+{
+  "module": "smoke-f4",
+  "title": "Smoke test — manual-generator contra entorno F4",
+  "intro": "Escenario mínimo para validar la herramienta contra un entorno dev generado con `entornos/bootstrap.sh` (F4). Captura pantallas básicas de una BD con `base,web` instalados. No documenta ningún módulo: sirve como smoke test reproducible del pipeline seed→capture→render.\n\nUso típico (BD `test_mg` creada con `docker compose exec odoo odoo -d test_mg -i base,web --stop-after-init`, login `admin`):\n\n```bash\nexport ODOO_UI_PASSWORD=admin\nnpx manual-gen run --config configs/smoke-f4.json --url http://localhost:8321 --db test_mg --user admin --out <dir-salida>\n```",
+  "requirements": [
+    "Entorno F4 levantado (`docker compose up -d --build`) y accesible por HTTP.",
+    "BD con `base,web` instalados y usuario admin conocido (password vía env `ODOO_UI_PASSWORD`, nunca en este JSON)."
+  ],
+  "flows": [
+    {
+      "id": "01-home",
+      "title": "1. Pantalla inicial del cliente web",
+      "description": "Tras iniciar sesión, Odoo muestra el cliente web con la barra de navegación principal.",
+      "steps": [
+        { "goto": "/odoo" },
+        { "waitFor": ".o_main_navbar", "timeout": 30000 },
+        { "wait": 1000 }
+      ]
+    },
+    {
+      "id": "02-apps",
+      "title": "2. Lista de aplicaciones",
+      "description": "El menú **Aplicaciones** lista los módulos disponibles para instalar.",
+      "steps": [
+        { "goto": "/odoo/apps" },
+        { "waitFor": ".o_kanban_view, .o_list_view", "timeout": 30000 },
+        { "wait": 1500 }
+      ]
+    },
+    {
+      "id": "03-settings",
+      "title": "3. Ajustes generales",
+      "description": "La pantalla de **Ajustes** confirma que el backend responde y renderiza formularios.",
+      "steps": [
+        { "goto": "/odoo/settings" },
+        { "waitFor": ".o_form_view, .settings", "timeout": 30000 },
+        { "wait": 1500 }
+      ]
+    }
+  ],
+  "notes": "Este escenario es el criterio de salida E2E de la Fase 6. Si falla, revisar: URL/puerto del entorno, nombre de la BD, y que `ODOO_UI_PASSWORD` esté exportada."
+}

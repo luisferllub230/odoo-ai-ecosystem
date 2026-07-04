@@ -1,0 +1,62 @@
+services:
+  odoo:
+    container_name: gestor_odoo
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ODOO_VERSION: "${ODOO_VERSION:-19.0}"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Puerto HTTP en el host (8169 para no chocar con los entornos dev 8017/8019/809x)
+      - "${ODOO_PORT:-8169}:8069"
+      # Puerto websocket/gevent (necesario porque la instancia corre con workers > 0)
+      - "${ODOO_GEVENT_PORT:-8172}:8072"
+    environment:
+      - HOST=db
+      - PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-odoo}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
+    volumes:
+      # Config montada para poder ajustarla sin rebuild (la imagen lleva una copia como fallback)
+      - ./config:/etc/odoo
+      # Filestore persistente
+      - gestor_odoo_data:/var/lib/odoo
+      # Fuentes Enterprise en solo lectura (ver README: opción por defecto = ENTERPRISE_PATH)
+      - ${ENTERPRISE_PATH:-./enterprise}:/mnt/enterprise:ro
+    restart: unless-stopped
+    networks:
+      - gestor_network
+
+  db:
+    container_name: gestor_db
+    image: postgres:17
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-odoo}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
+      - POSTGRES_DB=postgres
+    # Postgres NO se expone al host por defecto (el 5432 del host ya lo ocupa postgres_db).
+    # Descomentar solo si se necesita acceso directo desde el host:
+    # ports:
+    #   - "5469:5432"
+    volumes:
+      - gestor_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-odoo} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - gestor_network
+
+volumes:
+  gestor_odoo_data:
+  gestor_db_data:
+
+networks:
+  # Red propia y aislada: esta instancia NO se une a odoo_shared_network (entornos dev)
+  gestor_network:

@@ -1,0 +1,14 @@
+# Perfiles de conexión a instancias Odoo.
+# Los secretos NUNCA van aquí: usar ${VAR} para leerlos del entorno.
+gestor:
+  url: http://localhost:8169
+  db: gestor
+  user: ai-agent
+  api_key: ${GESTOR_API_KEY}
+
+# Ejemplo de perfil remoto (descomentar y ajustar):
+# cliente_x:
+#   url: https://odoo.clientex.com
+#   db: clientex_prod
+#   user: ai-agent@clientex.com
+#   api_key: ${CLIENTE_X_API_KEY}
