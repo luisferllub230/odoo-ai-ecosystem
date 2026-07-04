@@ -49,28 +49,27 @@ class TestPaymentTransaction(AzulCommon):
         self.assertEqual(tx.azul_itbis_sent, '000')
         self.assertFalse(tx.azul_conversion_details)  # No conversion for DOP.
 
-    def test_rendering_values_convert_to_dop(self):
-        """ Test that a non-DOP transaction amount is converted to DOP before
-        being sent to AZUL, and that the conversion is documented. """
-        self.env['res.currency.rate'].create({
+    def _set_dop_rate(self, rate, company=None):
+        """ Create an explicit DOP rate (units of DOP per 1 company currency). """
+        return self.env['res.currency.rate'].create({
             'currency_id': self.currency_dop.id,
-            'rate': 60.0,
+            'rate': rate,
             'name': fields.Date.context_today(self.env.user),
-            'company_id': self.env.company.id,
+            'company_id': (company or self.env.company).id,
         })
+
+    def test_rendering_values_convert_to_dop_golden_rate(self):
+        """ Test the USD -> DOP conversion against exact golden numbers:
+        1 USD = 60.5 DOP, 10.00 USD must yield Amount '60500'. """
+        if self.env.company.currency_id != self.currency_usd:
+            self.skipTest("company currency is not USD")
+        self._set_dop_rate(60.5)
         tx = self._create_transaction(
             flow='redirect', currency_id=self.currency_usd.id, reference='TX-USD-001'
         )
         rendering_values = tx._get_specific_rendering_values(None)
 
-        expected_amount_dop = self.currency_usd._convert(
-            tx.amount, self.currency_dop, self.env.company,
-            fields.Date.context_today(self.env.user),
-        )
-        expected_minor = payment_utils.to_minor_currency_units(
-            expected_amount_dop, self.currency_dop
-        )
-        self.assertEqual(rendering_values['Amount'], str(expected_minor))
+        self.assertEqual(rendering_values['Amount'], '60500')  # 10.00 * 60.5 = 605.00 DOP
         self.assertNotEqual(
             rendering_values['Amount'],
             str(payment_utils.to_minor_currency_units(tx.amount, self.currency_usd)),
@@ -80,6 +79,77 @@ class TestPaymentTransaction(AzulCommon):
         self.assertTrue(tx.azul_conversion_details)
         self.assertIn('USD', tx.azul_conversion_details)
         self.assertIn('DOP', tx.azul_conversion_details)
+
+    def test_rendering_values_conversion_subcent_rounding(self):
+        """ Test the rounding chain on a conversion with a sub-cent fraction:
+        1.99 USD * 60.5 = 120.395 DOP -> 120.40 (currency rounding in _convert)
+        -> '12040' minor units (DOWN rounding of to_minor_currency_units acts on
+        the already-rounded DOP amount). """
+        if self.env.company.currency_id != self.currency_usd:
+            self.skipTest("company currency is not USD")
+        self._set_dop_rate(60.5)
+        tx = self._create_transaction(
+            flow='redirect', currency_id=self.currency_usd.id, amount=1.99,
+            reference='TX-USD-002',
+        )
+        rendering_values = tx._get_specific_rendering_values(None)
+        self.assertEqual(rendering_values['Amount'], '12040')
+
+    def test_rendering_values_convert_third_currency(self):
+        """ Test that any third currency is accepted and converted through the
+        configured rates: 10 EUR * (60.5 DOP / 0.9 EUR) = 672.22 DOP. """
+        self.env['res.currency.rate'].create({
+            'currency_id': self.currency_euro.id,
+            'rate': 0.9,
+            'name': fields.Date.context_today(self.env.user),
+            'company_id': self.env.company.id,
+        })
+        self._set_dop_rate(60.5)
+        tx = self._create_transaction(
+            flow='redirect', currency_id=self.currency_euro.id, reference='TX-EUR-001'
+        )
+        rendering_values = tx._get_specific_rendering_values(None)
+        self.assertEqual(rendering_values['Amount'], '67222')  # 605 / 0.9 = 672.222…
+        self.assertEqual(rendering_values['CurrencyCode'], '$')
+
+    def test_rendering_values_without_dop_rate_raises(self):
+        """ Test that a non-DOP transaction with no usable DOP rate fails loudly
+        instead of sending a suspicious amount to AZUL. """
+        currency_x = self.env['res.currency'].create({'name': 'XZY', 'symbol': 'X'})
+        # Remove any (demo) rate so that neither currency has a configured rate.
+        self.env['res.currency.rate'].search([
+            ('currency_id', 'in', (self.currency_dop.id, currency_x.id)),
+        ]).unlink()
+        tx = self._create_transaction(
+            flow='redirect', currency_id=currency_x.id, reference='TX-NORATE-001'
+        )
+        with self.assertRaises(ValidationError):
+            tx._get_specific_rendering_values(None)
+        self.assertFalse(tx.azul_amount_sent)  # Nothing was sent nor persisted.
+
+    def test_rendering_values_multicompany_uses_tx_company_rate(self):
+        """ Test that the conversion uses the rate of the transaction company,
+        not the current company (multi-company). """
+        if self.env.company.currency_id != self.currency_usd:
+            self.skipTest("company currency is not USD")
+        company_b = self.env['res.company'].create({
+            'name': "Company B", 'currency_id': self.currency_usd.id,
+        })
+        self._set_dop_rate(60.5)  # Main company rate.
+        self._set_dop_rate(55.0, company=company_b)  # Company B rate.
+        provider_b = self._prepare_provider('azul', company=company_b, update_values={
+            'azul_merchant_id': '39038540035',
+            'azul_merchant_name': 'Test Shop B',
+            'azul_merchant_type': 'ECommerce',
+            'azul_currency_code': '$',
+            'azul_auth_key': 'dummy_azul_auth_key_for_tests',
+        })
+        tx = self._create_transaction(
+            flow='redirect', provider_id=provider_b.id,
+            currency_id=self.currency_usd.id, reference='TX-MC-001',
+        )
+        rendering_values = tx._get_specific_rendering_values(None)
+        self.assertEqual(rendering_values['Amount'], '55000')  # 10.00 * 55.0, not 60.5.
 
     def test_get_tx_from_notification_data_returns_tx(self):
         """ Test that the transaction is found from the OrderNumber. """
@@ -177,3 +247,15 @@ class TestPaymentTransaction(AzulCommon):
             'azul', {'OrderNumber': tx.reference, 'azul_cancel': True}
         )
         self.assertEqual(tx.state, 'cancel')
+
+    def test_full_flow_with_odoo_style_reference(self):
+        """ Test the render + return round trip with a typical Odoo reference
+        containing hyphens ('S00042-1') in OrderNumber and both hashes. """
+        tx = self._create_transaction(flow='redirect', reference='S00042-1')
+        rendering_values = tx._get_specific_rendering_values(None)
+        self.assertEqual(rendering_values['OrderNumber'], 'S00042-1')
+
+        notification_data = self._azul_notification_data(tx)
+        self.assertEqual(notification_data['OrderNumber'], 'S00042-1')
+        tx._handle_notification_data('azul', notification_data)
+        self.assertEqual(tx.state, 'done')

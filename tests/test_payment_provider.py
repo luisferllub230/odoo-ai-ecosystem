@@ -58,6 +58,48 @@ class TestPaymentProvider(AzulCommon):
             '3c1d0b52ccb7ff00d05089f1555b8c70e4fb4ed8af4bf358258db31d7b1811ca',
         )
 
+    def test_request_hash_with_odoo_style_reference(self):
+        """ Test the request AuthHash with an OrderNumber containing hyphens,
+        as produced by standard Odoo references ('S00042-1'). """
+        values = [
+            '39038540035',                      # MerchantId
+            'Test Shop',                        # MerchantName
+            'ECommerce',                        # MerchantType
+            '$',                                # CurrencyCode
+            'S00042-1',                         # OrderNumber (Odoo-style)
+            '11800',                            # Amount
+            '1800',                             # ITBIS
+            'https://example.com/approved',     # ApprovedUrl
+            'https://example.com/declined',     # DeclinedUrl
+            'https://example.com/cancel',       # CancelUrl
+            '0', '', '',                        # UseCustomField1 + label + value
+            '0', '', '',                        # UseCustomField2 + label + value
+        ]
+        self.assertEqual(
+            self.provider._azul_calculate_hash(values),
+            '5f0d9c5698012121ac60f47efc3432947075bfc16a1756ea541af7e60fe2dc27'
+            '55386b02b2c04905647a17a84fefa2e856944ef973a6901e327695ef460fa697',
+        )
+
+    def test_response_hash_with_odoo_style_reference(self):
+        """ Test the response AuthHash with an OrderNumber containing hyphens. """
+        values = [
+            'S00042-1',          # OrderNumber (Odoo-style)
+            '11800',             # Amount
+            'OK1234',            # AuthorizationCode
+            '20260704120000',    # DateTime
+            '00',                # ResponseCode
+            '00',                # IsoCode
+            'APROBADA',          # ResponseMessage
+            '',                  # ErrorDescription
+            '20260704999999',    # RRN
+        ]
+        self.assertEqual(
+            self.provider._azul_calculate_hash(values),
+            'adf17b67e4ab3dd73a9451cc4c0ab83d6b61da0519233e9c8681c8f65fa321af'
+            '8dac4d7ad4f3f569b21558db12ec9ca45e9abe5024680566dabd2c672bdae030',
+        )
+
     def test_api_url_by_state(self):
         """ Test that the Payment Page URL follows the provider state and the
         manual contingency switch (PDF p.13). """
