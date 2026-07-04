@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Sale form POSTed by the customer's browser to the AZUL Payment Page
+         (PDF p.13-16). The auto-submit is done by the payment framework. -->
+    <template id="redirect_form">
+        <form t-att-action="api_url" method="post">
+            <input type="hidden" name="MerchantId" t-att-value="MerchantId"/>
+            <input type="hidden" name="MerchantName" t-att-value="MerchantName"/>
+            <input type="hidden" name="MerchantType" t-att-value="MerchantType"/>
+            <input type="hidden" name="CurrencyCode" t-att-value="CurrencyCode"/>
+            <input type="hidden" name="OrderNumber" t-att-value="OrderNumber"/>
+            <input type="hidden" name="Amount" t-att-value="Amount"/>
+            <input type="hidden" name="ITBIS" t-att-value="ITBIS"/>
+            <input type="hidden" name="ApprovedUrl" t-att-value="ApprovedUrl"/>
+            <input type="hidden" name="DeclinedUrl" t-att-value="DeclinedUrl"/>
+            <input type="hidden" name="CancelUrl" t-att-value="CancelUrl"/>
+            <input type="hidden" name="UseCustomField1" t-att-value="UseCustomField1"/>
+            <input type="hidden" name="CustomField1Label" t-att-value="CustomField1Label"/>
+            <input type="hidden" name="CustomField1Value" t-att-value="CustomField1Value"/>
+            <input type="hidden" name="UseCustomField2" t-att-value="UseCustomField2"/>
+            <input type="hidden" name="CustomField2Label" t-att-value="CustomField2Label"/>
+            <input type="hidden" name="CustomField2Value" t-att-value="CustomField2Value"/>
+            <input type="hidden" name="Locale" t-att-value="Locale"/>
+            <input type="hidden" name="AuthHash" t-att-value="AuthHash"/>
+        </form>
+    </template>
+
+</odoo>

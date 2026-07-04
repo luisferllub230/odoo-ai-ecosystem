@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="payment_provider_form" model="ir.ui.view">
+        <field name="name">Azul Provider Form</field>
+        <field name="model">payment.provider</field>
+        <field name="inherit_id" ref="payment.payment_provider_form"/>
+        <field name="arch" type="xml">
+            <group name="provider_credentials" position="inside">
+                <group invisible="code != 'azul'" name="azul_credentials">
+                    <field name="azul_merchant_id"
+                           string="Merchant ID"
+                           required="code == 'azul' and state != 'disabled'"/>
+                    <field name="azul_merchant_name"
+                           string="Merchant Name"
+                           required="code == 'azul' and state != 'disabled'"/>
+                    <field name="azul_merchant_type"
+                           string="Merchant Type"
+                           required="code == 'azul' and state != 'disabled'"/>
+                    <field name="azul_currency_code"
+                           string="Currency Code"
+                           required="code == 'azul' and state != 'disabled'"/>
+                    <field name="azul_auth_key"
+                           string="Auth Key"
+                           required="code == 'azul' and state != 'disabled'"
+                           password="True"/>
+                    <field name="azul_use_alternate_url"
+                           string="Use Alternate Site"
+                           invisible="state != 'enabled'"/>
+                </group>
+            </group>
+        </field>
+    </record>
+
+</odoo>

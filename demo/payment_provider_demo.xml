@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- AZUL sandbox credentials. DO NOT use in production: these credentials
+         are public test data for the AZUL test environment only. -->
+    <record id="payment_provider_azul" model="payment.provider">
+        <field name="state">test</field>
+        <field name="azul_merchant_id">39038540035</field>
+        <field name="azul_merchant_name">Azul Test Store</field>
+        <field name="azul_merchant_type">ECommerce</field>
+        <field name="azul_currency_code">$</field>
+        <field name="azul_auth_key">asdhakjshdkjasdasmndajksdkjaskldga8odya9d8yoasyd98asdyaisdhoaisyd0a8sydoashd8oasydoiahdpiashd09ayusidhaos8dy0a8dya08syd0a8ssdsax</field>
+    </record>
+
+</odoo>

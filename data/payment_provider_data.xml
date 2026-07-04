@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="payment_provider_azul" model="payment.provider">
+        <field name="name">Azul</field>
+        <field name="code">azul</field>
+        <field name="image_128"
+               type="base64"
+               file="azul_webpages/static/description/icon.png"/>
+        <field name="module_id" ref="base.module_azul_webpages"/>
+        <field name="redirect_form_view_id" ref="redirect_form"/>
+        <field name="payment_method_ids"
+               eval="[Command.set([ref('payment.payment_method_card')])]"/>
+    </record>
+
+</odoo>
