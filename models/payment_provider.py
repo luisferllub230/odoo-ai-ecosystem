@@ -51,6 +51,20 @@ class PaymentProvider(models.Model):
         default=False,
     )
 
+    # === COMPUTE METHODS === #
+
+    def _compute_feature_support_fields(self):
+        """ Override of `payment` to enable tokenization for AZUL.
+
+        AZUL supports tokenization through its DataVault: the card entered on the
+        Payment Page can be stored by AZUL, which returns a `DataVaultToken` used
+        for later payments (the customer only re-enters the CVV on the Page).
+        """
+        super()._compute_feature_support_fields()
+        self.filtered(lambda p: p.code == 'azul').update({
+            'support_tokenization': True,
+        })
+
     # === BUSINESS METHODS === #
 
     # NOTE on supported currencies: `_get_supported_currencies()` is intentionally
@@ -80,9 +94,14 @@ class PaymentProvider(models.Model):
 
         Algorithm (PDF p.65-66): concatenate the values in the documented order,
         append the AuthKey at the end of the string (the key is used both at the
-        end of the string and as the HMAC key, as in both PDF examples), encode
-        in UTF-16LE ("Unicode" in the C#/PHP examples) and compute an HMAC
-        SHA-512, output as lowercase hex.
+        end of the string and as the HMAC key), and compute an HMAC SHA-512 over
+        the message, output as lowercase hex.
+
+        Encoding, per the PHP example on p.66: the MESSAGE is encoded in UTF-16LE
+        (`mb_convert_encoding($str, 'UTF-16LE', ...)`), but the HMAC KEY is passed
+        raw (`hash_hmac('sha512', $str, $authKey)` uses the key's own bytes, not a
+        UTF-16LE re-encoding). Encoding the key in UTF-16LE produces a hash AZUL
+        rejects with `INVALID_AUTH:AuthHash`.
 
         :param list values: The ordered field values (strings) to hash.
         :return: The lowercase hexadecimal HMAC SHA-512 digest.
@@ -92,7 +111,7 @@ class PaymentProvider(models.Model):
         auth_key = self.sudo().azul_auth_key or ''
         message = ''.join(str(value) if value is not None else '' for value in values) + auth_key
         return hmac.new(
-            auth_key.encode('utf-16-le'), message.encode('utf-16-le'), hashlib.sha512
+            auth_key.encode('utf-8'), message.encode('utf-16-le'), hashlib.sha512
         ).hexdigest()
 
     def _get_default_payment_method_codes(self):

@@ -14,7 +14,8 @@ class TestPaymentProvider(AzulCommon):
 
         The vector pins the full algorithm of the PDF (p.65-66): concatenation
         order of the 16 request fields, AuthKey appended at the end of the
-        string AND used as HMAC key, UTF-16LE encoding, SHA-512, lowercase hex.
+        string AND used as HMAC key, message in UTF-16LE, key in raw bytes,
+        SHA-512, lowercase hex.
         """
         values = [
             '39038540035',                      # MerchantId
@@ -33,8 +34,8 @@ class TestPaymentProvider(AzulCommon):
         self.assertEqual(len(values), len(const.REQUEST_HASH_FIELDS))
         self.assertEqual(
             self.provider._azul_calculate_hash(values),
-            'edac1df09a43e0fcfc6aa9c082a7fab955ffd388060528bc96b2ca86e99e8d25'
-            '57bfca2e5320c76da989c6003b4847ef045b93183f8196bcff1f625fc4b45238',
+            'f9529e7d7b02b317c65639ef063798efef1424aff62fa2335561bdb815fb6470'
+            'f0446e1064c1c05f7eb619bfd6bcb0709ebde5fd4a737a083d7f5db1bdd5512f',
         )
 
     def test_response_hash_known_vector(self):
@@ -54,8 +55,8 @@ class TestPaymentProvider(AzulCommon):
         self.assertEqual(len(values), len(const.RESPONSE_HASH_FIELDS))
         self.assertEqual(
             self.provider._azul_calculate_hash(values),
-            '0e7b6bd50d013b4dc6ed8b6f01f5fe22268cfa03054f693c455ad5cf19ed1da3'
-            '3c1d0b52ccb7ff00d05089f1555b8c70e4fb4ed8af4bf358258db31d7b1811ca',
+            '393dfeb863c55d03b54882edf2be10ff5ee4fa4add98b2f7386d19db51f6b2af'
+            '42592cdba7ed2165b712ab425a4d53370f58a05d5544dee052aca24a0f9ec5e7',
         )
 
     def test_request_hash_with_odoo_style_reference(self):
@@ -77,8 +78,8 @@ class TestPaymentProvider(AzulCommon):
         ]
         self.assertEqual(
             self.provider._azul_calculate_hash(values),
-            '5f0d9c5698012121ac60f47efc3432947075bfc16a1756ea541af7e60fe2dc27'
-            '55386b02b2c04905647a17a84fefa2e856944ef973a6901e327695ef460fa697',
+            '106c358633c26a16506aad0b0bb3a0afa5435187002edde3b6ab6db6709f5002'
+            'e8ebcef90a8b8cb5592af4853591ab863c67683c8374c1d15fead5cf4f88021f',
         )
 
     def test_response_hash_with_odoo_style_reference(self):
@@ -96,8 +97,29 @@ class TestPaymentProvider(AzulCommon):
         ]
         self.assertEqual(
             self.provider._azul_calculate_hash(values),
-            'adf17b67e4ab3dd73a9451cc4c0ab83d6b61da0519233e9c8681c8f65fa321af'
-            '8dac4d7ad4f3f569b21558db12ec9ca45e9abe5024680566dabd2c672bdae030',
+            '26e09f9ae2e6e924482d8ceff10a0ca765643b60349aadf56a5834cd5225da4b'
+            '5418f9f7099eaefbc78027f61a0bc67303300cb522cb8eeae2b244353b36b4f5',
+        )
+
+    def test_hash_key_encoding_is_raw_not_utf16le(self):
+        """ Guard against the AuthHash regression that AZUL rejects with
+        `INVALID_AUTH:AuthHash`: the HMAC key must be the raw bytes of the
+        AuthKey, never a UTF-16LE re-encoding (only the message is UTF-16LE,
+        PDF PHP example p.66). """
+        import hashlib
+        import hmac
+
+        auth_key = self.provider.azul_auth_key
+        values = ['a', 'b', 'c']
+        message = ''.join(values) + auth_key
+
+        wrong = hmac.new(
+            auth_key.encode('utf-16-le'), message.encode('utf-16-le'), hashlib.sha512
+        ).hexdigest()
+
+        self.assertNotEqual(
+            self.provider._azul_calculate_hash(values), wrong,
+            "The HMAC key must not be UTF-16LE encoded (AZUL rejects that hash).",
         )
 
     def test_api_url_by_state(self):
