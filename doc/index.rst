@@ -84,10 +84,38 @@ HMAC **SHA-512**, lowercase hexadecimal output (PDF p.65-66):
   ResponseCode + IsoCode + ResponseMessage + ErrorDescription + RRN +
   AuthKey``
 - The ``AuthKey`` is used **twice**, as in both PDF examples: appended at the
-  end of the string *and* as the HMAC key. Strings are encoded in **UTF-16LE**
-  ("Unicode" in the C#/PHP examples). To be validated against the sandbox
-  (PDF ambiguity).
+  end of the string *and* as the HMAC key.
+- **Encoding (critical):** the *message* is encoded in **UTF-16LE** ("Unicode"
+  in the C#/PHP examples), but the *HMAC key* is passed as **raw bytes** (the
+  key's own UTF-8/ASCII bytes), following the PHP example on p.66
+  (``mb_convert_encoding($str, 'UTF-16LE', ...)`` for the message,
+  ``hash_hmac('sha512', $str, $authKey)`` with the key untouched). Encoding the
+  key in UTF-16LE as well produces a hash AZUL rejects with
+  ``INVALID_AUTH:AuthHash``.
 - The ``AuthKey`` never travels in the POST and is never logged.
+
+Tokenization (DataVault)
+========================
+
+AZUL can store the card in its **DataVault** and return a token for later
+payments (PDF p.35-38). The provider enables Odoo tokenization
+(``support_tokenization``):
+
+- **Saving a card:** when the customer ticks *Save my payment details* at
+  checkout, the sale form is sent with ``SaveToDataVault=1``. On an approved
+  return AZUL adds ``DataVaultToken`` / ``DataVaultExpiration`` /
+  ``DataVaultBrand`` to the querystring; the module creates a ``payment.token``
+  whose ``provider_ref`` is the ``DataVaultToken``. AZUL only tokenizes an
+  **approved** card (PDF p.35), so a declined payment never creates a token.
+- **Paying with a saved card:** the transaction is sent with the stored
+  ``DataVaultToken``; AZUL pre-fills the card and asks only for the CVV. Because
+  AZUL has no server-to-server API, a token payment **still redirects** to the
+  Payment Page (a small ``payment_form.js`` patch submits the redirect form for
+  the token flow instead of processing it silently).
+- ``SaveToDataVault`` and ``DataVaultToken`` do **not** participate in the
+  ``AuthHash`` (PDF p.16/p.30, HASH column = *No*), so the request/response
+  hashed field lists are unchanged.
+- Enable tokenization per provider with *Allow Saving Payment Methods*.
 
 Configuration
 =============
@@ -151,7 +179,10 @@ Troubleshooting
 Technical notes
 ===============
 
-- Provider code: ``azul``; flow: ``online_redirect``; no new models, no JS.
-- Out of scope: DataVault (tokenization), HOLD/POST/VOID, explicit 3-D Secure
-  (handled inside AZUL's page), DCC, installments, refunds from Odoo.
+- Provider code: ``azul``; flows: ``online_redirect`` and ``online_token``
+  (the token flow also redirects, see *Tokenization*). Adds one field to
+  ``payment.token`` (``azul_datavault_expiration``) and a small frontend JS
+  patch.
+- Out of scope: HOLD/POST/VOID, explicit 3-D Secure (handled inside AZUL's
+  page), DCC, installments, refunds from Odoo.
 - Tests: ``odoo -d <db> -i azul_webpages --test-enabled --stop-after-init``.

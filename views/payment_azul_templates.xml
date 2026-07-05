@@ -23,6 +23,12 @@
             <input type="hidden" name="CustomField2Value" t-att-value="CustomField2Value"/>
             <input type="hidden" name="Locale" t-att-value="Locale"/>
             <input type="hidden" name="AuthHash" t-att-value="AuthHash"/>
+            <!-- DataVault (tokenization) fields. Not part of the AuthHash
+                 (PDF p.16), rendered only when tokenizing or paying by token. -->
+            <input t-if="SaveToDataVault" type="hidden" name="SaveToDataVault"
+                   t-att-value="SaveToDataVault"/>
+            <input t-if="DataVaultToken" type="hidden" name="DataVaultToken"
+                   t-att-value="DataVaultToken"/>
         </form>
     </template>
 

@@ -17,6 +17,11 @@
 
         'data/payment_provider_data.xml',
     ],
+    'assets': {
+        'web.assets_frontend': [
+            'azul_webpages/static/src/js/payment_form.js',
+        ],
+    },
     'demo': [
         'demo/payment_provider_demo.xml',
     ],

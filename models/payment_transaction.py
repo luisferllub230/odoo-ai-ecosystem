@@ -54,6 +54,28 @@ class PaymentTransaction(models.Model):
 
     # === BUSINESS METHODS - PAYMENT FLOW === #
 
+    def _get_processing_values(self):
+        """ Override of `payment` to redirect AZUL token payments.
+
+        AZUL has no server-to-server API (the Payment Page is the only channel),
+        so a payment with a saved token cannot be charged silently: it must
+        redirect to the Payment Page too, where AZUL pre-fills the card and asks
+        only for the CVV. The base method only renders the redirect form for the
+        `online_redirect`/`validation` operations, so it is rendered here for the
+        `online_token` operation as well.
+
+        :return: The processing values with the redirect form for token payments.
+        :rtype: dict
+        """
+        res = super()._get_processing_values()
+        if self.provider_code == 'azul' and self.operation == 'online_token':
+            redirect_form_view = self.provider_id._get_redirect_form_view()
+            rendering_values = self._get_specific_rendering_values(res)
+            res['redirect_form_html'] = self.env['ir.qweb']._render(
+                redirect_form_view.id, rendering_values
+            )
+        return res
+
     def _get_specific_rendering_values(self, processing_values):
         """ Override of `payment` to return AZUL-specific rendering values.
 
@@ -112,6 +134,19 @@ class PaymentTransaction(models.Model):
         rendering_values['AuthHash'] = provider._azul_calculate_hash(
             [rendering_values[field_name] for field_name in const.REQUEST_HASH_FIELDS]
         )
+
+        # DataVault (tokenization). These fields do NOT participate in the
+        # AuthHash (PDF p.16/p.30, HASH column = "No"), so they are added after
+        # the hash is computed and never alter REQUEST_HASH_FIELDS.
+        if self.token_id:
+            # Paying with a saved card: AZUL pre-fills the card from the token and
+            # only asks the customer for the CVV on the Payment Page.
+            rendering_values['DataVaultToken'] = self.token_id.provider_ref
+        elif self.tokenize:
+            # The customer asked to save the card: instruct AZUL to store it and
+            # return a DataVaultToken (only when the payment is approved, p.35).
+            rendering_values['SaveToDataVault'] = '1'
+
         rendering_values['api_url'] = provider._azul_get_api_url()
 
         # Document the values sent to AZUL on the transaction (amount coherence
@@ -329,6 +364,11 @@ class PaymentTransaction(models.Model):
         # State mapping: IsoCode '00' is the only approval code (PDF p.69).
         iso_code = notification_data.get('IsoCode')
         if iso_code == const.APPROVED_ISO_CODE:
+            # DataVault: AZUL only returns a token when the card was approved
+            # (PDF p.35). Create it before setting the transaction done so the
+            # token is linked to the transaction.
+            if self.tokenize and notification_data.get('DataVaultToken'):
+                self._azul_tokenize_from_notification_data(notification_data)
             self._set_done()
         else:
             error_message = _(
@@ -343,3 +383,36 @@ class PaymentTransaction(models.Model):
                 iso_code, self.reference,
             )
             self._set_error(error_message)
+
+    def _azul_tokenize_from_notification_data(self, notification_data):
+        """ Create a payment token from the DataVault data returned by AZUL.
+
+        The standard sale return does not include the card number (PDF p.16), so
+        the token display falls back to the card brand when no masked number is
+        available. The `provider_ref` holds the DataVaultToken used to charge the
+        card again later.
+
+        Note: self.ensure_one()
+
+        :param dict notification_data: The notification data sent by AZUL.
+        :return: None
+        """
+        self.ensure_one()
+        card_number = notification_data.get('CardNumber') or ''
+        payment_details = card_number[-4:] if card_number else (
+            notification_data.get('DataVaultBrand') or 'Azul'
+        )
+        token = self.env['payment.token'].create({
+            'provider_id': self.provider_id.id,
+            'payment_method_id': self.payment_method_id.id,
+            'payment_details': payment_details,
+            'partner_id': self.partner_id.id,
+            'provider_ref': notification_data['DataVaultToken'],
+            'azul_datavault_expiration': notification_data.get('DataVaultExpiration'),
+        })
+        self.write({'token_id': token.id, 'tokenize': False})
+        _logger.info(
+            "Created AZUL DataVault token with id %(token_id)s for partner with id "
+            "%(partner_id)s from transaction with reference %(ref)s.",
+            {'token_id': token.id, 'partner_id': self.partner_id.id, 'ref': self.reference},
+        )

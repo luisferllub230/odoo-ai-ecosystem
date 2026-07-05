@@ -4,6 +4,7 @@ from odoo.tests import tagged
 from odoo.tools import mute_logger
 
 from odoo.addons.payment.tests.http_common import PaymentHttpCommon
+from odoo.addons.azul_webpages import const
 from odoo.addons.azul_webpages.controllers.main import AzulController
 from odoo.addons.azul_webpages.tests.common import AzulCommon
 
@@ -137,3 +138,74 @@ class TestProcessingFlows(AzulCommon, PaymentHttpCommon):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(tx.state, 'draft')
+
+    # === DATAVAULT (TOKENIZATION) === #
+
+    def test_save_card_sends_savetodatavault(self):
+        """ Test that a tokenized payment sends SaveToDataVault=1 and no token,
+        and that the DataVault fields never enter the AuthHash. """
+        tx = self._create_transaction(flow='redirect', tokenize=True)
+        values = tx._get_specific_rendering_values(None)
+
+        self.assertEqual(values['SaveToDataVault'], '1')
+        self.assertNotIn('DataVaultToken', values)
+        # The hash must equal the one computed over only the 16 request fields.
+        expected = self.provider._azul_calculate_hash(
+            [values[name] for name in const.REQUEST_HASH_FIELDS]
+        )
+        self.assertEqual(values['AuthHash'], expected)
+
+    def test_paying_with_token_sends_datavault_token(self):
+        """ Test that a payment with a saved token sends DataVaultToken and no
+        SaveToDataVault instruction. """
+        token = self._create_token(provider_ref='DATAVAULT-TOKEN-XYZ')
+        tx = self._create_transaction(flow='token', token_id=token.id)
+        values = tx._get_specific_rendering_values(None)
+
+        self.assertEqual(values['DataVaultToken'], 'DATAVAULT-TOKEN-XYZ')
+        self.assertNotIn('SaveToDataVault', values)
+
+    def test_token_operation_renders_redirect_form(self):
+        """ Test that a token payment still renders a redirect form: AZUL has no
+        server-to-server API and must redirect to the Payment Page for the CVV. """
+        token = self._create_token(provider_ref='DATAVAULT-TOKEN-XYZ')
+        tx = self._create_transaction(flow='token', token_id=token.id)
+
+        processing_values = tx._get_processing_values()
+
+        self.assertIn('redirect_form_html', processing_values)
+        self.assertIn('DataVaultToken', processing_values['redirect_form_html'])
+
+    @mute_logger('odoo.addons.azul_webpages.controllers.main')
+    def test_approved_return_with_datavault_creates_token(self):
+        """ Test that an approved return carrying a DataVaultToken creates a
+        payment token linked to the transaction. """
+        tx = self._create_transaction(flow='redirect', tokenize=True)
+        tx._get_specific_rendering_values(None)
+        url = self._build_url(AzulController._approved_url)
+        params = self._azul_return_params(tx, DataVaultToken='DV-TOKEN-001',
+                                          DataVaultExpiration='202612',
+                                          DataVaultBrand='VISA')
+
+        self._azul_get(url, params=params)
+
+        self.assertEqual(tx.state, 'done')
+        self.assertTrue(tx.token_id)
+        self.assertEqual(tx.token_id.provider_ref, 'DV-TOKEN-001')
+        self.assertEqual(tx.token_id.azul_datavault_expiration, '202612')
+        self.assertFalse(tx.tokenize)
+
+    @mute_logger('odoo.addons.azul_webpages.controllers.main')
+    def test_declined_return_does_not_create_token(self):
+        """ Test that a declined return never creates a token even if the client
+        asked to save the card (AZUL only tokenizes approved cards, PDF p.35). """
+        tx = self._create_transaction(flow='redirect', tokenize=True)
+        tx._get_specific_rendering_values(None)
+        url = self._build_url(AzulController._approved_url)
+        params = self._azul_return_params(tx, iso_code='05',
+                                          DataVaultToken='DV-TOKEN-002')
+
+        self._azul_get(url, params=params)
+
+        self.assertEqual(tx.state, 'error')
+        self.assertFalse(tx.token_id)
