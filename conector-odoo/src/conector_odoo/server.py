@@ -1,7 +1,9 @@
 """Servidor MCP (stdio) que expone herramientas de gestión de tareas Odoo."""
 
 import base64
+import html
 import mimetypes
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -77,6 +79,66 @@ def html_to_text(html):
     parser = _HTMLToText()
     parser.feed(html)
     return parser.text()
+
+
+# Known HTML tags that mark a body as already-formatted (passthrough).
+_HTML_TAG_RE = re.compile(
+    r"<(/?)(p|br|ul|ol|li|b|i|strong|em|h[1-6]|div|a|code|pre)\b", re.I
+)
+
+
+def _is_bullet_line(line):
+    """True if a line starts (after indentation) with a simple bullet marker."""
+    return line.lstrip()[:2] in ("- ", "* ")
+
+
+def _block_to_html(block):
+    """Render one text block (no blank lines) as a <ul> list or a <p> paragraph."""
+    lines = block.split("\n")
+    if all(_is_bullet_line(ln) for ln in lines):
+        items = "".join(
+            f"<li>{html.escape(ln.lstrip()[2:].strip())}</li>" for ln in lines
+        )
+        return f"<ul>{items}</ul>"
+    return "<p>" + "<br>".join(html.escape(ln) for ln in lines) + "</p>"
+
+
+def text_to_html(body):
+    """Convierte texto plano a HTML legible para el chatter de Odoo.
+
+    Odoo renderiza el body del chatter como HTML, así que el texto plano con
+    saltos de línea se colapsa y sale "todo junto". Esta función formatea:
+    párrafos (separados por líneas en blanco), saltos de línea (``<br>``) y
+    listas simples (líneas ``- ``/``* ``). Si el body ya contiene HTML conocido
+    se devuelve sin cambios (passthrough) para no doble-escapar.
+    """
+    if not body:
+        return body or ""
+    if _HTML_TAG_RE.search(body):
+        return body
+    normalized = body.replace("\r\n", "\n").replace("\r", "\n")
+    blocks = re.split(r"\n\s*\n", normalized.strip())
+    return "".join(_block_to_html(b) for b in blocks if b.strip())
+
+
+def _post_message(client, task_id, body, attachment_ids=None):
+    """Publica un mensaje HTML en el chatter de una tarea y devuelve su id.
+
+    Odoo 16+ representa los campos HTML con ``markupsafe.Markup``: ``message_post``
+    ESCAPA un ``body`` que llega como ``str`` plano (lo que siempre ocurre vía
+    XML-RPC, que no puede transportar ``Markup``), y el chatter muestra las
+    etiquetas literales. Solución: publicar y luego reescribir el ``body`` del
+    mensaje con ``mail.message.write``, que sí acepta HTML como ``str`` sin
+    escaparlo. Antes se normaliza el texto plano a HTML con ``text_to_html``.
+    """
+    html_body = text_to_html(body)
+    kwargs = {"body": html_body, "message_type": "comment"}
+    if attachment_ids:
+        kwargs["attachment_ids"] = attachment_ids
+    posted = client.execute_kw("project.task", "message_post", [[task_id]], kwargs)
+    ids = posted if isinstance(posted, list) else [posted]
+    client.execute_kw("mail.message", "write", [ids, {"body": html_body}])
+    return posted
 
 
 def _get_client(profile):
@@ -378,12 +440,7 @@ def move_task(profile: str, task_id: int, stage: str) -> dict:
 def comment_task(profile: str, task_id: int, body: str) -> dict:
     """Agrega un comentario a la bitácora (chatter) de la tarea."""
     client = _get_client(profile)
-    message_id = client.execute_kw(
-        "project.task",
-        "message_post",
-        [[task_id]],
-        {"body": body, "message_type": "comment"},
-    )
+    message_id = _post_message(client, task_id, body)
     return {"task_id": task_id, "message_id": message_id}
 
 
@@ -412,15 +469,11 @@ def attach_doc(profile: str, task_id: int, file_path: str) -> dict:
             }
         ],
     )
-    client.execute_kw(
-        "project.task",
-        "message_post",
-        [[task_id]],
-        {
-            "body": f"Documento adjuntado: {path.name}",
-            "message_type": "comment",
-            "attachment_ids": [attachment_id],
-        },
+    _post_message(
+        client,
+        task_id,
+        f"Documento adjuntado: {path.name}",
+        attachment_ids=[attachment_id],
     )
     return {"task_id": task_id, "attachment_id": attachment_id, "name": path.name}
 
