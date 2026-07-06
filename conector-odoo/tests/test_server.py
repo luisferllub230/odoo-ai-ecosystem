@@ -107,6 +107,63 @@ def test_html_to_text():
     assert server.html_to_text(html) == "Hola mundo\nuno\ndos"
 
 
+# --- text_to_html --------------------------------------------------------
+
+
+def test_text_to_html_paragraphs():
+    assert server.text_to_html("Hola\n\nMundo") == "<p>Hola</p><p>Mundo</p>"
+
+
+def test_text_to_html_linebreaks_within_paragraph():
+    assert server.text_to_html("a\nb") == "<p>a<br>b</p>"
+
+
+def test_text_to_html_simple_list():
+    assert server.text_to_html("- uno\n- dos") == "<ul><li>uno</li><li>dos</li></ul>"
+    assert server.text_to_html("* uno\n* dos") == "<ul><li>uno</li><li>dos</li></ul>"
+
+
+def test_text_to_html_passthrough_when_already_html():
+    body = "<p>ya <b>html</b></p>"
+    assert server.text_to_html(body) == body
+
+
+def test_text_to_html_escapes_special_chars():
+    out = server.text_to_html("a < b & c")
+    assert "&lt;" in out and "&amp;" in out
+    assert out == "<p>a &lt; b &amp; c</p>"
+
+
+def test_text_to_html_empty():
+    assert server.text_to_html("") == ""
+    assert server.text_to_html(None) == ""
+
+
+def test_text_to_html_roundtrip_recovers_lines():
+    # html_to_text colapsa el límite de párrafo a un solo \n, así que el
+    # round-trip recupera las líneas lógicas (no las líneas en blanco).
+    text = "Hola\nMundo\n\notra linea"
+    assert server.html_to_text(server.text_to_html(text)) == "Hola\nMundo\notra linea"
+
+
+def test_comment_task_converts_plain_text_to_html():
+    captured = {}
+
+    class _FakeComment:
+        def execute_kw(self, model, method, args, kwargs=None):
+            assert (model, method) == ("project.task", "message_post")
+            captured["body"] = kwargs["body"]
+            return [7]
+
+    server._CLIENTS["test"] = _FakeComment()
+    try:
+        result = server.comment_task("test", 42, "linea uno\n\nlinea dos")
+    finally:
+        server._CLIENTS.pop("test", None)
+    assert result == {"task_id": 42, "message_id": [7]}
+    assert captured["body"] == "<p>linea uno</p><p>linea dos</p>"
+
+
 # --- list_projects / recommend_tasks -------------------------------------
 
 # Stage catalog shared by the recommendation fakes: id -> (name, sequence, fold).
