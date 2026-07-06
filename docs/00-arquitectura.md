@@ -34,7 +34,7 @@ La IA **nunca** cruza estos puntos sola:
 Principios que toda pieza del ecosistema debe respetar:
 
 - **Estado en archivos, no en conversación**: `ROADMAP.md`, `design.md` por tarea, Engram. Una sesión nueva lee estado, no re-deriva.
-- **Modelos por fase** (perfil SDD de gentle-ai): potente para diseño/análisis, rápido/económico para implementación mecánica y exploración.
+- **Modelos por fase** (perfil SDD de gentle-ai): potente para diseño/análisis, rápido/económico para implementación mecánica y exploración. Política proceso→tier: [modelos-por-proceso](estandares/modelos-por-proceso.md).
 - **Subagentes con propósito**: delegar exploraciones largas de código a agentes de contexto barato; el hilo principal se mantiene delgado (patrón orchestrator-thin de gentle-ai).
 - **Plantillas**: tarea, diseño, manual de prueba, PR — la IA rellena, no inventa estructura.
 - **Skills precargados** en vez de prompts repetidos.
