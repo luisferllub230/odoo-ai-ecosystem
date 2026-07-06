@@ -23,7 +23,7 @@ metadata:
    git fetch && git checkout -b <tipo>/<task_id>-<slug> origin/<rama-base>
    ```
    Ej.: `fix/1234-ir3-descuadre`.
-4. Implementar según design.md.
+4. Implementar según design.md. Trabajo tier Medio (`sonnet`) — ver [modelos-por-proceso](../../../docs/estandares/modelos-por-proceso.md). Escalar a tier Potente (`opus`) si el design.md marca alta complejidad (repo/módulo desconocido, trade-offs, diff esperado > 400 líneas); dejar la decisión trazable en la tarea.
 5. Entorno de la versión correspondiente ([GUIA-AGENTES](../../../entornos/GUIA-AGENTES.md)): si el entorno del repo/versión ya existe → solo §2 (up/logs); si no existe → generarlo con §1 **SIN `--force`**. NUNCA `--force` sobre un entorno existente. Verificar arranque sin errores + tests del módulo (§4). Respetar salvaguardas §0. Nota: §4 puede dejar creada la BD `test_<task_id>`; `/tarea-prueba` la recreará limpia.
 6. Commits convencionales estilo Odoo (`tipo(modulo): descripción` + cuerpo técnico), **sin firma de IA**. Para formato y límite de asunto manda [git-commits](../../../docs/estandares/git-commits.md) del repo (≤ ~72 chars); el skill global `commit` es dependencia opcional para reforzar "sin firma IA" — regla ya garantizada por git-commits.md. Un commit = un cambio lógico.
 7. `comment_task` con avance relevante: rama creada, qué se implementó, resultado de tests.
