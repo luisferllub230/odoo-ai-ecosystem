@@ -20,6 +20,7 @@
   - `list_projects(profile)` — proyectos con conteo de tareas (total y abiertas).
   - `list_tasks(profile, project, stage)` — tareas por etapa.
   - `recommend_tasks(profile, project, limit)` — tareas trabajables priorizadas y explicadas.
+  - `current_task(profile)` — tarea(s) en vuelo de la IA (Desarrollo/Prueba/PR/Review, asignadas a `AI Agent`) con fase y motivo; "con qué tarea está iterando la sesión".
   - `get_task(profile, task_id)` — descripción completa + adjuntos.
   - `move_task(profile, task_id, stage)` — solo etapas permitidas a la IA (ver F2).
   - `comment_task(profile, task_id, body)` — bitácora de avances.
