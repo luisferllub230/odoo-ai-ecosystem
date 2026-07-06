@@ -17,7 +17,7 @@ metadata:
 
 ## Pasos
 
-1. `get_task(task_id)` (MCP `gestor-odoo`). Anotar etapa, título y descripción.
+1. `get_task(task_id)` (MCP `gestor-odoo`). Anotar etapa, título y descripción. Si vas a analizar (etapa `Análisis/Diseño`, no un caso de abortar), escribir el marcador de tarea activa: `bash .claude/marca-tarea.sh <task_id> "<nombre>" "Análisis/Diseño" diseno` (fichero local `docs/tareas/.current`, gitignored, que lee `.claude/statusline-tarea.sh`; la fuente de verdad para consultas es la herramienta MCP `current_task`).
 2. Validar campos obligatorios según [plantilla-tarea](../../../docs/estandares/plantilla-tarea.md): `Contexto`, `Objetivo`, `Repo`, `Rama base`, `Versión Odoo`, ≥1 criterio de aceptación. Si falta alguno: `comment_task` listando exactamente qué falta y **parar aquí**.
 3. Explorar el repo objetivo (el de `Alcance técnico → Repo`) con un subagente barato tipo `Explore`: módulos afectados, modelos, vistas, flujos existentes, referencias archivo:línea. Objetivo: validar **factibilidad**, no implementar.
 4. Generar `docs/tareas/<task_id>/design.md` (en este repo) rellenando [plantilla-diseno](../../../docs/estandares/plantilla-diseno.md): factibilidad, análisis, diseño propuesto, alcance, riesgos, plan de prueba, estimación. Si es NO FACTIBLE o ambigua, decirlo con preguntas concretas para el humano.
