@@ -33,9 +33,13 @@
 3. Mover tarea a `PR/Review` con enlace al PR.
 4. ⛔ **Gate humano**: review, merge y deploy.
 
-## 5.5 Cierre
+## 5.5 Cierre (`/tarea-close <task_id>`)
 
-Humano mueve a `Hecho` y ordena la siguiente tarea. La IA registra en Engram lo aprendido (decisiones, gotchas del módulo) para futuras tareas.
+1. Tras el **merge humano** del PR, verificar que el PR está mergeado (`gh pr list --head <rama>`); si no, abortar y pedir el merge.
+2. Cambiar el repo local a la rama principal actualizada (`git checkout <principal> && git pull --ff-only`) y borrar la rama local de la tarea con salvaguarda (`git branch -d`, nunca `-D`; el squash-merge requiere confirmación humana).
+3. Limpiar el marcador de tarea activa (`docs/tareas/.current`) y comentar el cierre en la tarea.
+4. Registrar en Engram lo aprendido (decisiones, gotchas del módulo) para futuras tareas.
+5. ⛔ **Gate humano**: mover a `Hecho`, deploy y borrado de la rama remota. La IA solo hace limpieza local tras confirmar el merge.
 
 ## Criterio de salida de la fase
 
