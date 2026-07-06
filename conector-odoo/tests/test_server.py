@@ -323,3 +323,121 @@ def test_recommend_tasks_empty():
         assert server.recommend_tasks("test", "Nada") == []
     finally:
         _uninstall()
+
+
+# --- current_task --------------------------------------------------------
+
+# Stage catalog for current_task: adds the AI in-flight stages with sequences.
+_CT_STAGE_TYPES = {
+    20: ("Aprobado", 2, False),
+    21: ("Desarrollo", 3, False),
+    22: ("Prueba", 4, False),
+    23: ("PR/Review", 5, False),
+    24: ("Hecho", 9, True),
+    25: ("Análisis/Diseño", 1, False),
+}
+
+
+def _ct_stage_type_read(ids):
+    return [
+        {"id": i, "name": _CT_STAGE_TYPES[i][0], "sequence": _CT_STAGE_TYPES[i][1],
+         "fold": _CT_STAGE_TYPES[i][2]}
+        for i in ids
+    ]
+
+
+class _FakeCurrent:
+    """execute_kw fake for current_task."""
+
+    def __init__(self, tasks):
+        self._tasks = tasks
+
+    def execute_kw(self, model, method, args, kwargs=None):
+        if (model, method) == ("project.task", "search_read"):
+            return self._tasks
+        if (model, method) == ("project.task.type", "read"):
+            return _ct_stage_type_read(args[0])
+        raise AssertionError(f"unexpected call {model}.{method}")
+
+
+def _current_tasks_fixture():
+    return [
+        {"id": 1, "name": "en dev", "priority": "0", "stage_id": [21, "Desarrollo"],
+         "project_id": [1, "Plantilla"], "date_deadline": False,
+         "write_date": "2026-07-06 10:00:00"},
+        {"id": 2, "name": "en prueba vieja", "priority": "1", "stage_id": [22, "Prueba"],
+         "project_id": [1, "Plantilla"], "date_deadline": False,
+         "write_date": "2026-07-01 09:00:00"},
+        {"id": 3, "name": "en pr", "priority": "0", "stage_id": [23, "PR/Review"],
+         "project_id": [1, "Plantilla"], "date_deadline": "2026-07-10",
+         "write_date": "2026-07-05 08:00:00"},
+        {"id": 4, "name": "aprobada, aún no en curso", "priority": "0",
+         "stage_id": [20, "Aprobado"], "project_id": [1, "Plantilla"],
+         "date_deadline": False, "write_date": "2026-07-06 11:00:00"},
+        {"id": 5, "name": "ya hecha", "priority": "0", "stage_id": [24, "Hecho"],
+         "project_id": [1, "Plantilla"], "date_deadline": False,
+         "write_date": "2026-07-06 12:00:00"},
+    ]
+
+
+def test_current_task_only_inflight_stages_ordered():
+    _install(_FakeCurrent(_current_tasks_fixture()))
+    try:
+        result = server.current_task("test")
+    finally:
+        _uninstall()
+    # Excludes Aprobado (4) and Hecho (5); order by stage.sequence DESC:
+    # PR/Review(5) > Prueba(4) > Desarrollo(3).
+    assert [t["id"] for t in result] == [3, 2, 1]
+
+
+def test_current_task_write_date_tiebreak_within_stage():
+    tasks = [
+        {"id": 10, "name": "dev vieja", "priority": "0", "stage_id": [21, "Desarrollo"],
+         "project_id": [1, "P"], "date_deadline": False, "write_date": "2026-07-01 00:00:00"},
+        {"id": 11, "name": "dev reciente", "priority": "0", "stage_id": [21, "Desarrollo"],
+         "project_id": [1, "P"], "date_deadline": False, "write_date": "2026-07-06 00:00:00"},
+    ]
+    _install(_FakeCurrent(tasks))
+    try:
+        result = server.current_task("test")
+    finally:
+        _uninstall()
+    # same stage.sequence -> write_date DESC (most recent first)
+    assert [t["id"] for t in result] == [11, 10]
+
+
+def test_current_task_reason_and_next_transition():
+    _install(_FakeCurrent(_current_tasks_fixture()))
+    try:
+        result = server.current_task("test")
+    finally:
+        _uninstall()
+    by_id = {t["id"]: t for t in result}
+    assert by_id[3]["stage"] == "PR/Review"
+    assert by_id[3]["next_ai_transition"] is None  # PR/Review -> human gate (merge)
+    assert "vence 2026-07-10" in by_id[3]["reason"]
+    assert by_id[2]["next_ai_transition"] == "PR/Review"  # Prueba -> PR/Review
+    assert "importante ⭐" in by_id[2]["reason"]
+    assert by_id[1]["next_ai_transition"] == "Prueba"  # Desarrollo -> Prueba
+    assert by_id[1]["project"] == "Plantilla"
+
+
+def test_current_task_empty_when_no_tasks():
+    _install(_FakeCurrent([]))
+    try:
+        assert server.current_task("test") == []
+    finally:
+        _uninstall()
+
+
+def test_current_task_empty_when_none_inflight():
+    tasks = [
+        {"id": 1, "name": "aprobada", "priority": "0", "stage_id": [20, "Aprobado"],
+         "project_id": [1, "P"], "date_deadline": False, "write_date": "2026-07-06 00:00:00"},
+    ]
+    _install(_FakeCurrent(tasks))
+    try:
+        assert server.current_task("test") == []
+    finally:
+        _uninstall()

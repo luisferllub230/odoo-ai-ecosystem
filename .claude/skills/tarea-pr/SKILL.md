@@ -23,7 +23,7 @@ metadata:
    - Título = primera línea del commit principal.
    - Cuerpo = qué/por qué (resumen del design.md) + cómo probar (enlace a `docs/tareas/<task_id>/manual-prueba.md`).
    - **Sin firma de IA**: nada de `Co-Authored-By: Claude` ni `Generated with Claude Code`.
-5. `move_task` a `PR/Review` + `comment_task` con la URL del PR.
+5. `move_task` a `PR/Review` + `comment_task` con la URL del PR. Actualizar el marcador de tarea activa: `bash .claude/marca-tarea.sh <task_id> "<nombre>" "PR/Review" pr` (statusline de terminal; ver `tarea-dev`).
 6. Registrar en engram (`mem_save`, project `odoo-ai-ecosystem`): cierre del ciclo, decisiones y gotchas aprendidos en la tarea (alimenta 5.5).
 
 ## Gate humano

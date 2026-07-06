@@ -33,7 +33,7 @@ metadata:
       (o `--profile <perfil>` si la instancia está en `conector-odoo/profiles.yml`). Salida: `manual-<module>.md` + `img/*.png` con rutas relativas.
    3. Verificar exit 0 y que cada PNG referenciado existe; integrar las capturas/las secciones generadas en `manual-prueba.md`. Si alguna pantalla no se puede automatizar, capturarla manualmente o dejar placeholder `img/eN-pM.png` anotado en el manual.
 5. `attach_doc` con el manual a la tarea.
-6. `move_task` a `Prueba` + `comment_task` con resumen de escenarios ejecutados y resultado.
+6. `move_task` a `Prueba` + `comment_task` con resumen de escenarios ejecutados y resultado. Actualizar el marcador de tarea activa: `bash .claude/marca-tarea.sh <task_id> "<nombre>" Prueba prueba` (statusline de terminal; ver `tarea-dev`).
 7. Registrar en engram (`mem_save`, project `odoo-ai-ecosystem`): gotchas de la prueba, datos semilla no obvios, casos borde.
 
 ## Gate humano

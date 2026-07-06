@@ -17,7 +17,7 @@ metadata:
 ## Pasos
 
 1. `get_task(task_id)` (MCP `gestor-odoo`). Si la etapa NO es `Aprobado`: **abortar** — `comment_task` con el motivo ("la tarea está en `<etapa>`; este workflow requiere `Aprobado`") además de reportar al humano. No mover nada.
-2. `move_task` a `Desarrollo`.
+2. `move_task` a `Desarrollo`. Escribir el marcador de tarea activa (vista pasiva de la statusline de terminal): `bash .claude/marca-tarea.sh <task_id> "<nombre>" Desarrollo dev`. Es un fichero local `docs/tareas/.current` (gitignored) que lee `.claude/statusline-tarea.sh`; no llama a Odoo. La fuente de verdad para consultas sigue siendo la herramienta MCP `current_task`.
 3. En el repo objetivo (según `Alcance técnico` de la tarea), verificar primero `git remote -v`: si no hay remoto configurado, **abortar** (`comment_task` con el motivo) y pedir al humano configurar el remoto/cuenta SSH. Con remoto OK, crear rama desde la principal actualizada — nunca `main`/`master`/`17.0`/`19.0` directo; ver [git-commits](../../../docs/estandares/git-commits.md):
    ```bash
    git fetch && git checkout -b <tipo>/<task_id>-<slug> origin/<rama-base>

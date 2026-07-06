@@ -31,6 +31,13 @@ _AI_NEXT_STAGE = {
     "prueba": "PR/Review",
 }
 
+# Stages the AI owns once it starts working a task (normalized names). A task in
+# one of these, assigned to the AI, is "the task the session is iterating on".
+_AI_INFLIGHT_STAGES = {"desarrollo", "prueba", "pr/review"}
+
+# Display name of the AI assignee used to scope "current task" to the agent.
+_AI_ASSIGNEE = "AI Agent"
+
 _HUMAN_GATES_MSG = (
     "Transición no permitida a la IA: '{current}' -> '{target}'. "
     "La IA solo puede mover: Aprobado->Desarrollo, Desarrollo->Prueba, Prueba->PR/Review. "
@@ -322,6 +329,61 @@ def recommend_tasks(profile: str, project: str, limit: int = 10) -> list:
                 "stage": meta["name"],
                 "stage_sequence": meta["sequence"],
                 "date_deadline": t.get("date_deadline") or None,
+                "reason": _build_reason(t, meta),
+                "next_ai_transition": _next_ai_transition(meta["name"]),
+            }
+        )
+    return result
+
+
+@mcp.tool()
+def current_task(profile: str) -> list:
+    """Devuelve la(s) tarea(s) con las que la IA está iterando ahora mismo.
+
+    "En curso" = tareas en vuelo de la IA (etapas Desarrollo, Prueba o
+    PR/Review) asignadas a 'AI Agent'. La fuente de verdad es el tablero de
+    Odoo, así que esta lista es consultable desde cualquier canal (móvil vía
+    chat, terminal, o la propia app de Odoo). Orden: stage.sequence DESC
+    (lo más avanzado primero) y luego write_date DESC (actividad más reciente).
+    Caso normal: una sola tarea (regla de no avanzar dos fases en paralelo); si
+    hay varias sesiones activas, se listan todas. Cada tarea incluye 'reason'
+    legible y 'next_ai_transition' (la etapa a la que la IA puede avanzar según
+    el guard). Lista vacía si no hay ninguna tarea en vuelo.
+    """
+    client = _get_client(profile)
+    tasks = client.execute_kw(
+        "project.task",
+        "search_read",
+        [[("user_ids.name", "=", _AI_ASSIGNEE)]],
+        {
+            "fields": [
+                "id", "name", "priority",
+                "stage_id", "project_id", "date_deadline", "write_date",
+            ]
+        },
+    )
+    if not tasks:
+        return []
+    stage_ids = sorted({t["stage_id"][0] for t in tasks if t["stage_id"]})
+    stage_meta = _stage_meta(client, stage_ids)
+    inflight = [
+        t for t in tasks
+        if t["stage_id"] and _norm(stage_meta[t["stage_id"][0]]["name"]) in _AI_INFLIGHT_STAGES
+    ]
+    # stage.sequence DESC then write_date DESC: reverse=True on both keys.
+    inflight.sort(
+        key=lambda t: (stage_meta[t["stage_id"][0]]["sequence"], t.get("write_date") or ""),
+        reverse=True,
+    )
+    result = []
+    for t in inflight:
+        meta = stage_meta[t["stage_id"][0]]
+        result.append(
+            {
+                "id": t["id"],
+                "name": t["name"],
+                "stage": meta["name"],
+                "project": t["project_id"][1] if t["project_id"] else None,
                 "reason": _build_reason(t, meta),
                 "next_ai_transition": _next_ai_transition(meta["name"]),
             }
