@@ -21,6 +21,14 @@ ALLOWED_TRANSITIONS = {
     ("prueba", "pr/review"),
 }
 
+# Display name of the single next stage the AI may advance to from each stage.
+# Must stay in sync with ALLOWED_TRANSITIONS (keys are normalized stage names).
+_AI_NEXT_STAGE = {
+    "aprobado": "Desarrollo",
+    "desarrollo": "Prueba",
+    "prueba": "PR/Review",
+}
+
 _HUMAN_GATES_MSG = (
     "Transición no permitida a la IA: '{current}' -> '{target}'. "
     "La IA solo puede mover: Aprobado->Desarrollo, Desarrollo->Prueba, Prueba->PR/Review. "
@@ -78,6 +86,50 @@ def _get_client(profile):
     return _CLIENTS[profile]
 
 
+def _as_int(value):
+    """Coerce Odoo selection/int values (e.g. priority '0'/'1') to int."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _stage_meta(client, stage_ids):
+    """Read name/sequence/fold for the given project.task.type ids."""
+    if not stage_ids:
+        return {}
+    types = client.execute_kw(
+        "project.task.type",
+        "read",
+        [list(stage_ids)],
+        {"fields": ["id", "name", "sequence", "fold"]},
+    )
+    return {
+        t["id"]: {
+            "name": t["name"],
+            "sequence": t.get("sequence") or 0,
+            "fold": bool(t.get("fold")),
+        }
+        for t in types
+    }
+
+
+def _next_ai_transition(stage_name):
+    """Return the next stage the AI may move to per the guard, else None (human gate)."""
+    return _AI_NEXT_STAGE.get(_norm(stage_name))
+
+
+def _build_reason(task, stage_meta):
+    """Human-readable explanation of why a task ranks where it does."""
+    parts = []
+    if _as_int(task.get("priority")) > 0:
+        parts.append("importante ⭐")
+    if task.get("date_deadline"):
+        parts.append(f"vence {task['date_deadline']}")
+    parts.append(f"etapa {stage_meta['name']}")
+    return "; ".join(parts)
+
+
 @mcp.tool()
 def list_tasks(profile: str, project: str | None = None, stage: str | None = None) -> list:
     """Lista tareas del Odoo del perfil indicado.
@@ -106,6 +158,113 @@ def list_tasks(profile: str, project: str | None = None, stage: str | None = Non
         }
         for t in tasks
     ]
+
+
+@mcp.tool()
+def list_projects(profile: str) -> list:
+    """Lista los proyectos disponibles con conteo de tareas.
+
+    Devuelve por proyecto: id, name, task_count (todas) y open_task_count
+    (excluye tareas en etapas plegadas fold=True, típicamente Hecho/Cancelado).
+    Orden alfabético por nombre.
+    """
+    client = _get_client(profile)
+    projects = client.execute_kw(
+        "project.project",
+        "search_read",
+        [[]],
+        {"fields": ["id", "name"], "order": "name"},
+    )
+    if not projects:
+        return []
+    project_ids = [p["id"] for p in projects]
+    tasks = client.execute_kw(
+        "project.task",
+        "search_read",
+        [[("project_id", "in", project_ids)]],
+        {"fields": ["id", "project_id", "stage_id"]},
+    )
+    stage_ids = sorted({t["stage_id"][0] for t in tasks if t["stage_id"]})
+    folded = {sid for sid, m in _stage_meta(client, stage_ids).items() if m["fold"]}
+    counts = {pid: [0, 0] for pid in project_ids}  # [total, open]
+    for t in tasks:
+        pid = t["project_id"][0] if t["project_id"] else None
+        if pid not in counts:
+            continue
+        counts[pid][0] += 1
+        sid = t["stage_id"][0] if t["stage_id"] else None
+        if sid not in folded:
+            counts[pid][1] += 1
+    return [
+        {
+            "id": p["id"],
+            "name": p["name"],
+            "task_count": counts[p["id"]][0],
+            "open_task_count": counts[p["id"]][1],
+        }
+        for p in projects
+    ]
+
+
+@mcp.tool()
+def recommend_tasks(profile: str, project: str, limit: int = 10) -> list:
+    """Devuelve las tareas trabajables de un proyecto, priorizadas y explicadas.
+
+    Excluye tareas en etapas plegadas (fold=True). Orden: priority DESC
+    (importancia), date_deadline ASC (vencimiento, nulos al final),
+    stage.sequence DESC (avanzar lo más adelantado), sequence ASC, id ASC.
+    Cada tarea incluye 'reason' legible y 'next_ai_transition' (la etapa a la
+    que la IA puede avanzar según el guard, o None si el siguiente paso es un
+    gate humano).
+    """
+    client = _get_client(profile)
+    tasks = client.execute_kw(
+        "project.task",
+        "search_read",
+        [[("project_id.name", "ilike", project)]],
+        {
+            "fields": [
+                "id", "name", "priority", "sequence",
+                "stage_id", "date_deadline",
+            ]
+        },
+    )
+    if not tasks:
+        return []
+    stage_ids = sorted({t["stage_id"][0] for t in tasks if t["stage_id"]})
+    stage_meta = _stage_meta(client, stage_ids)
+    workable = [
+        t for t in tasks
+        if t["stage_id"] and not stage_meta[t["stage_id"][0]]["fold"]
+    ]
+
+    def sort_key(t):
+        meta = stage_meta[t["stage_id"][0]]
+        return (
+            -_as_int(t.get("priority")),
+            t.get("date_deadline") or "9999-12-31",
+            -meta["sequence"],
+            t.get("sequence") or 0,
+            t["id"],
+        )
+
+    workable.sort(key=sort_key)
+    result = []
+    for t in workable[: max(limit, 0)]:
+        meta = stage_meta[t["stage_id"][0]]
+        result.append(
+            {
+                "id": t["id"],
+                "name": t["name"],
+                "priority": _as_int(t.get("priority")),
+                "stage": meta["name"],
+                "stage_sequence": meta["sequence"],
+                "date_deadline": t.get("date_deadline") or None,
+                "reason": _build_reason(t, meta),
+                "next_ai_transition": _next_ai_transition(meta["name"]),
+            }
+        )
+    return result
 
 
 @mcp.tool()

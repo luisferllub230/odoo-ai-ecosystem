@@ -17,7 +17,9 @@
     ...
   ```
 - **Servidor MCP** (stdio) que expone herramientas al agente:
+  - `list_projects(profile)` — proyectos con conteo de tareas (total y abiertas).
   - `list_tasks(profile, project, stage)` — tareas por etapa.
+  - `recommend_tasks(profile, project, limit)` — tareas trabajables priorizadas y explicadas.
   - `get_task(profile, task_id)` — descripción completa + adjuntos.
   - `move_task(profile, task_id, stage)` — solo etapas permitidas a la IA (ver F2).
   - `comment_task(profile, task_id, body)` — bitácora de avances.
@@ -26,7 +28,7 @@
 ## Pasos
 
 1. Cliente RPC mínimo + perfiles (probar `common.authenticate` y `execute_kw` sobre `project.task`).
-2. Envolver como MCP server (SDK oficial MCP Python) con las 5 herramientas.
+2. Envolver como MCP server (SDK oficial MCP Python) con las herramientas.
 3. Registrar el MCP en Claude Code (`claude mcp add`) / config gentle-ai.
 4. Prueba end-to-end: el agente lee la tarea de prueba creada en F2 y le agrega un comentario.
 

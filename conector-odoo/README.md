@@ -20,7 +20,9 @@ Cambiar de Odoo = agregar un perfil y pasar su nombre en cada herramienta. El ar
 
 | Herramienta | Descripción |
 |---|---|
+| `list_projects(profile)` | Lista proyectos con `task_count` y `open_task_count` (excluye etapas plegadas) |
 | `list_tasks(profile, project?, stage?)` | Lista tareas (id, nombre, etapa, proyecto), con filtros opcionales |
+| `recommend_tasks(profile, project, limit?)` | Tareas trabajables priorizadas y explicadas (`reason`, `next_ai_transition`) |
 | `get_task(profile, task_id)` | Detalle completo: descripción, etapa, asignados, adjuntos, últimos mensajes |
 | `move_task(profile, task_id, stage)` | Mueve la tarea de etapa (solo transiciones permitidas a la IA) |
 | `comment_task(profile, task_id, body)` | Comentario en la bitácora (chatter) |
