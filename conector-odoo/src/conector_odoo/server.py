@@ -121,6 +121,26 @@ def text_to_html(body):
     return "".join(_block_to_html(b) for b in blocks if b.strip())
 
 
+def _post_message(client, task_id, body, attachment_ids=None):
+    """Publica un mensaje HTML en el chatter de una tarea y devuelve su id.
+
+    Odoo 16+ representa los campos HTML con ``markupsafe.Markup``: ``message_post``
+    ESCAPA un ``body`` que llega como ``str`` plano (lo que siempre ocurre vía
+    XML-RPC, que no puede transportar ``Markup``), y el chatter muestra las
+    etiquetas literales. Solución: publicar y luego reescribir el ``body`` del
+    mensaje con ``mail.message.write``, que sí acepta HTML como ``str`` sin
+    escaparlo. Antes se normaliza el texto plano a HTML con ``text_to_html``.
+    """
+    html_body = text_to_html(body)
+    kwargs = {"body": html_body, "message_type": "comment"}
+    if attachment_ids:
+        kwargs["attachment_ids"] = attachment_ids
+    posted = client.execute_kw("project.task", "message_post", [[task_id]], kwargs)
+    ids = posted if isinstance(posted, list) else [posted]
+    client.execute_kw("mail.message", "write", [ids, {"body": html_body}])
+    return posted
+
+
 def _get_client(profile):
     """Return a cached authenticated client for the given profile name."""
     if profile not in _CLIENTS:
@@ -420,12 +440,7 @@ def move_task(profile: str, task_id: int, stage: str) -> dict:
 def comment_task(profile: str, task_id: int, body: str) -> dict:
     """Agrega un comentario a la bitácora (chatter) de la tarea."""
     client = _get_client(profile)
-    message_id = client.execute_kw(
-        "project.task",
-        "message_post",
-        [[task_id]],
-        {"body": text_to_html(body), "message_type": "comment"},
-    )
+    message_id = _post_message(client, task_id, body)
     return {"task_id": task_id, "message_id": message_id}
 
 
@@ -454,15 +469,11 @@ def attach_doc(profile: str, task_id: int, file_path: str) -> dict:
             }
         ],
     )
-    client.execute_kw(
-        "project.task",
-        "message_post",
-        [[task_id]],
-        {
-            "body": text_to_html(f"Documento adjuntado: {path.name}"),
-            "message_type": "comment",
-            "attachment_ids": [attachment_id],
-        },
+    _post_message(
+        client,
+        task_id,
+        f"Documento adjuntado: {path.name}",
+        attachment_ids=[attachment_id],
     )
     return {"task_id": task_id, "attachment_id": attachment_id, "name": path.name}
 

@@ -146,14 +146,21 @@ def test_text_to_html_roundtrip_recovers_lines():
     assert server.html_to_text(server.text_to_html(text)) == "Hola\nMundo\notra linea"
 
 
-def test_comment_task_converts_plain_text_to_html():
+def test_comment_task_posts_html_and_rewrites_body():
+    # message_post escapa un body str plano (Odoo 16+), así que comment_task
+    # publica y luego reescribe el body con mail.message.write (sin escapar).
     captured = {}
 
     class _FakeComment:
         def execute_kw(self, model, method, args, kwargs=None):
-            assert (model, method) == ("project.task", "message_post")
-            captured["body"] = kwargs["body"]
-            return [7]
+            if (model, method) == ("project.task", "message_post"):
+                captured["post_body"] = kwargs["body"]
+                return [7]
+            if (model, method) == ("mail.message", "write"):
+                captured["write_ids"] = args[0]
+                captured["write_body"] = args[1]["body"]
+                return True
+            raise AssertionError(f"unexpected call {model}.{method}")
 
     server._CLIENTS["test"] = _FakeComment()
     try:
@@ -161,7 +168,10 @@ def test_comment_task_converts_plain_text_to_html():
     finally:
         server._CLIENTS.pop("test", None)
     assert result == {"task_id": 42, "message_id": [7]}
-    assert captured["body"] == "<p>linea uno</p><p>linea dos</p>"
+    # el body ya viaja como HTML y se reescribe sobre el mensaje recién creado
+    assert captured["post_body"] == "<p>linea uno</p><p>linea dos</p>"
+    assert captured["write_ids"] == [7]
+    assert captured["write_body"] == "<p>linea uno</p><p>linea dos</p>"
 
 
 # --- list_projects / recommend_tasks -------------------------------------
