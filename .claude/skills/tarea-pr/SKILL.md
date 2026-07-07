@@ -13,6 +13,7 @@ metadata:
 
 - Tarea en etapa `Prueba` y el humano dio la orden de PR (gate de test funcional superado).
 - Tests del módulo en verde y `docs/tareas/<task_id>/manual-prueba.md` generado y adjunto a la tarea. Si algo de esto falta: **abortar** — `comment_task` con el motivo además de reportar al humano.
+- Workflow guionizado (push + PR + mover etapa): tier Compacto (`haiku`) — ver [modelos-por-proceso](../../../docs/estandares/modelos-por-proceso.md).
 
 ## Pasos
 

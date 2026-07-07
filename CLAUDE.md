@@ -23,4 +23,4 @@ Hub de gobierno del ecosistema IA para desarrollo Odoo. **Antes de trabajar: lee
 
 ## Eficiencia de tokens
 
-Estado en archivos/engram, no en conversación. Delegar exploraciones largas a subagentes baratos. Documentos cortos que enlazan, no duplican.
+Estado en archivos/engram, no en conversación. Delegar exploraciones largas a subagentes baratos. Documentos cortos que enlazan, no duplican. Qué tier de modelo usar según el proceso: `docs/estandares/modelos-por-proceso.md`.

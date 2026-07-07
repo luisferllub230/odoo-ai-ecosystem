@@ -14,6 +14,7 @@ metadata:
 - Tarea en etapa `Desarrollo` con implementación terminada y tests del módulo en verde (`/tarea-dev` completado).
 - `docs/tareas/<task_id>/design.md` con sección "Plan de prueba".
 - Entorno de la tarea operativo (F4).
+- Workflow guionizado sobre datos conocidos: tier Compacto (`haiku`) — ver [modelos-por-proceso](../../../docs/estandares/modelos-por-proceso.md).
 
 ## Pasos
 

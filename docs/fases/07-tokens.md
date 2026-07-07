@@ -39,7 +39,7 @@ Tokens de subagentes medidos por el orquestador. El hilo del orquestador **no** 
 ## Ajustes aplicados y recomendados
 
 - **Orquestador delgado**: delega TODO trabajo real a subagentes; el hilo principal solo coordina y sintetiza.
-- **Modelos por fase**: writers/tests/reviews en sonnet; orquestación en modelo mayor.
+- **Modelos por fase**: writers/tests/reviews en sonnet; orquestación en modelo mayor. Política proceso→tier: [modelos-por-proceso](../estandares/modelos-por-proceso.md).
 - **Lentes de review proporcionales al riesgo**: 1 lente para docs/texto, 2 (reliability + resilience) para shell/estado, 4R solo en hot paths o diffs >400 líneas.
 - **Reutilizar el MISMO subagente writer para fixes** (vía SendMessage): conserva contexto y evita re-lectura del repo.
 - **Estado en archivos, no en conversación**: auditorías → `docs/`, decisiones → engram. Nunca re-explorar lo ya documentado.
